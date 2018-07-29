@@ -31,6 +31,8 @@ To retrieve center point coordinates in the input image from `cx` and `cy`, `cx_
 
 You can easily compute `(xmin, ymin, xmax, ymax)` for a bounding box using `step_height`, `step_width` and center points.
 
+The outputs of AnchorBox will be part of predictions that will be fed to loss function.
+
 ### model constructure in keras_ssd7.py
 
 There are predictor layers `classes4`, `classes5`, `classes6` and `classes7` for predicting classes for feature maps of different sizes. Output shape is `(batch, height, width, n_boxes * n_classes)`. Note height and width here are from the feature maps, not the input images. The predition is per class per box per pixel in the feature maps.
@@ -46,18 +48,18 @@ The raw data is of the form of raw images and a label file in which each row con
 
 By default, `parse_csv` generate a list in which each element is of the form `(image_name, 'class_id', 'xmin', 'ymin', 'xmax', 'ymax')` and the list is sorted on image names. It iterates the list and generate 4 lists named images, filenames, labels and image_ids where k-th element in each of the lists corresponds to k-th image, image file filename, all the class and coordinates of the bounding box info associated with the image and image id.
 
-Note the loop that generates the 4 lists can handle unsorted list, but that would lead to images and filenames lists containing duplicates. If sorted, an image should be able to get all labels associated with it once and for all. In that case, not duplicates.
+Note the loop that generates the 4 lists can handle unsorted list, but that would lead to images and filenames lists containing duplicates. If sorted, an image should be able to get all labels associated with it once and for all. In that case, no duplicates.
 
->             label_encoder (callable, optional): Only relevant if labels are given. A callable that takes as input the
-                labels of a batch (as a list of Numpy arrays) and returns some structure that represents those labels.
-                The general use case for this is to convert labels from their input format to a format that a given object
-                detection model needs as its training targets.
+>   label_encoder (callable, optional): Only relevant if labels are given. A callable that takes as input the
+    labels of a batch (as a list of Numpy arrays) and returns some structure that represents those labels.
+    The general use case for this is to convert labels from their input format to a format that a given object
+    detection model needs as its training targets.
 
->             `y_encoded`, a 3D numpy array of shape `(batch_size, #boxes, #classes + 4 + 4 + 4)` that serves as the
-            ground truth label tensor for training, where `#boxes` is the total number of boxes predicted by the
-            model per image, and the classes are one-hot-encoded. The four elements after the class vecotrs in
-            the last axis are the box coordinates, the next four elements after that are just dummy elements, and
-            the last four elements are the variances.
+>   `y_encoded`, a 3D numpy array of shape `(batch_size, #boxes, #classes + 4 + 4 + 4)` that serves as the
+    ground truth label tensor for training, where `#boxes` is the total number of boxes predicted by the
+    model per image, and the classes are one-hot-encoded. The four elements after the class vecotrs in
+    the last axis are the box coordinates, the next four elements after that are just dummy elements, and
+    the last four elements are the variances.
 
 `generate` takes self.labels (inherited from labels list in parse_csv). Each element in self.labels is of the form [class_id, 'xmin', 'ymin', 'xmax', 'ymax'], representing the class and coordinates of a bounding box.
 
@@ -98,3 +100,7 @@ We start computing loss from `y_true` and `y_pred`. They should be of the same s
 For ground truth each image contains the same number of boxes the model needs to predict.
 
 Let's walk through the data processing procedures.
+
+### Sum up
+
+The loss is computed on ground truth of input images for both `y_true` and `y_pred`. Softmax cross-entropy loss requires `y_pred` to have softmaxed classification data and `y_true` to have one-hot encoded classification data. Absolute anchor box coordinates and offsets are based on input images.
