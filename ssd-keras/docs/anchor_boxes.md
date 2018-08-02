@@ -1,5 +1,7 @@
 ### Anchor Boxes and Data Flow
 
+When I was reading the paper and SSD Python implementation I was troubled with anchor boxes. It's deeply connected with the data format flowing through the pipeline. During training time we need to compare `y_pred` and `y_true` to compute loss. During inference time we need to convert predictions to boxes in the input images when prediction is done on feature maps. Both processes involve mapping anchor boxes in the feature maps to the positive bounding boxes in the input images.
+
 Notice the following paragraph in `README.md` at [ssd_keras by pierluigiferrari](https://github.com/pierluigiferrari/ssd_keras)
 > This may or may not be obvious to you, but it is important to understand that it is not possible for the model to predict absolute coordinates for the predicted bounding boxes. ..., In order to be able to predict absolute box coordinates, the convolutional layers responsible for localization would need to produce different output values for the same object instance at different locations within the input image. This isn't possible of course: For a given input to the filter of a convolutional layer, the filter will produce the same output regardless of the spatial position within the image because of the shared weights. This is the reason why the model predicts offsets to anchor boxes instead of absolute coordinates, and why during training, absolute ground truth coordinates are converted to anchor box offsets in the encoding process.
 
@@ -67,6 +69,8 @@ Note the loop that generates the 4 lists can handle unsorted list, but that woul
 * Find positive match. For each batch item, we find the anchor boxes that have enough overlaps with positive boxes in the ground truth data, find the corresponding indices in `y_encoded`, set the class vector and coordinates of the positive boxes. Note that elements reserved for offsets are dummy in `y_encoded`.
 * Exclude non-negative boxes. For anchor boxes that are too close to a positive ground truth box but have fewer overlaps than the threshold, set the class one-hot vector to all zeros, indicating they are neither positive boxes nor negative boxes.
 * All other boxes are preset as negative boxes with coordiantes set.
+
+Interlude: So in `y_encoded` the elements with indices corresponding to anchor boxes that are matches to positive bounding boxes in ground truth, have absolute coordinates in the input images from positive ground truth. For negative boxes, the absolute coordinates of anchor boxes are set.
 
 Then transform it to offsets relative to anchor boxes. So in each index corresponding to a certain anchor box, `y_true` has [class_vector, 4 offsets, 4 dummies, 4 variances]. `y_pred` has [class_vector, 4 offsets, 4 anchor box coords, 4 variances]
 
